@@ -18,3 +18,10 @@ images
 *.avi
 *.mkv
 *.flv
+
+# Allow default assets for Docker build
+!logo.webp
+!bg_music.mp3
+!arrow.png
+!assets/
+!assets/**

@@ -19,9 +19,12 @@ def ensure_vietnamese_font(font_path: Path) -> Path:
     return font_path
 
 
-def generate_blurred_background(image_path: Path) -> Path:
-    BLUR_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    cached_file = BLUR_CACHE_DIR / f"{image_path.stem}_blur.jpg"
+def generate_blurred_background(
+    image_path: Path,
+    cache_dir: Path = BLUR_CACHE_DIR,
+) -> Path:
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cached_file = cache_dir / f"{image_path.stem}_blur.jpg"
     if cached_file.exists():
         return cached_file
 
@@ -79,8 +82,9 @@ def create_image_layers(
     duration: float,
     motion_mode: str,
     motion_intensity: float,
+    cache_dir: Path = BLUR_CACHE_DIR,
 ) -> List[ImageClip]:
-    bg_path = generate_blurred_background(image_path)
+    bg_path = generate_blurred_background(image_path, cache_dir=cache_dir)
     bg = ImageClip(str(bg_path)).with_duration(duration)
     bg = bg.with_effects([vfx.Resize(lambda t: 1 + 0.006 * t)])
     bg = bg.with_position(("center", "center"))

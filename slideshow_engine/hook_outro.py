@@ -6,7 +6,7 @@ from typing import Sequence
 import numpy as np
 from PIL import Image
 from moviepy import ColorClip, CompositeVideoClip, ImageClip, TextClip, vfx
-from .config import FONT_PATH, H, W
+from .config import FONT_PATH, H, MAX_PRODUCTS, MIN_PRODUCTS, W
 
 DEFAULT_FONT_PATH = FONT_PATH
 
@@ -37,41 +37,47 @@ def _load_rgba_clip(path_like: str | Path, duration: float) -> ImageClip:
     return base.with_mask(mask)
 
 
+def _compute_stack_positions(count: int, seed: int = 2026) -> list[tuple[float, float]]:
+    """Generate overlapping stack positions centred on screen for *count* images."""
+    rng = random.Random(seed)
+    cx, cy = W * 0.50, H * 0.52
+    # Spread images in a loose cluster; more images → wider spread
+    spread_x = 120 + count * 12
+    spread_y = 80 + count * 18
+    positions = []
+    for i in range(count):
+        angle = (2 * math.pi * i / count) + rng.uniform(-0.3, 0.3)
+        r = 0.5 + rng.uniform(0, 0.5)
+        x = cx - 200 + r * spread_x * math.cos(angle)
+        y = cy - 180 + r * spread_y * math.sin(angle)
+        positions.append((x, y))
+    return positions
+
+
 def create_intro_hook(
     images: Sequence[str],
     duration: float = 3.0,
     intro_text: str = "Top 5 vot cau long\nDang mua nhat 2026!",
 ) -> CompositeVideoClip:
-    """
-    Tao hook mo dau 3s voi hieu ung pop-up stack:
-    - Nen toi
-    - 5 anh hien lan luot moi 0.2s, xep chong lech va xoay ngau nhien
-    - Text hook khong lo xuat hien tu 1.0s
-    """
-    if len(images) < 5:
-        raise ValueError("Can it nhat 5 anh cho intro hook.")
+    """Intro hook with stacked pop-in images.  Supports 2-10 images."""
+    count = min(len(images), MAX_PRODUCTS)
+    if count < MIN_PRODUCTS:
+        raise ValueError(f"Can it nhat {MIN_PRODUCTS} anh cho intro hook.")
     if duration <= 0:
         raise ValueError("duration phai > 0")
 
     font_name = _resolve_font()
 
-    # Nen toi de lam noi bat cac anh san pham trong suot.
     bg = ColorClip(size=(W, H), color=(20, 20, 20)).with_duration(duration)
 
-    # Vi tri xep chong quanh trung tam de tao cam giac "vange".
-    stacked_positions = [
-        (W * 0.50 - 230, H * 0.52 - 260),
-        (W * 0.50 - 170, H * 0.52 - 220),
-        (W * 0.50 - 260, H * 0.52 - 160),
-        (W * 0.50 - 140, H * 0.52 - 130),
-        (W * 0.50 - 210, H * 0.52 - 80),
-    ]
+    stacked_positions = _compute_stack_positions(count)
 
     rng = random.Random(2026)
     image_layers = []
-    for idx, img_path in enumerate(images[:5]):
+    stagger = min(0.2, (duration * 0.4) / max(count, 1))  # fit all pop-ins in first 40%
+    for idx, img_path in enumerate(images[:count]):
         source_path = _require_existing_file(img_path, f"anh intro thu {idx + 1}")
-        start_t = idx * 0.2
+        start_t = idx * stagger
         layer_duration = max(0.1, duration - start_t)
 
         angle = rng.uniform(-15, 15)
@@ -82,7 +88,6 @@ def create_intro_hook(
         clip = clip.with_start(start_t)
         clip = clip.with_position((int(stacked_positions[idx][0]), int(stacked_positions[idx][1])))
 
-        # Pop-in nhe: scale tu 88% -> 100% trong 0.25s dau cua tung anh.
         clip = clip.with_effects(
             [vfx.Resize(lambda t: 0.88 + 0.12 * min(1.0, t / 0.25))]
         )

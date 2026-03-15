@@ -1,6 +1,9 @@
 # Use Python 3.12 slim as base
 FROM python:3.12-slim
 
+# Copy uv binary for faster dependency installation
+COPY --from=ghcr.io/astral-sh/uv:0.6.8 /uv /uvx /bin/
+
 # Set the working directory
 WORKDIR /app
 
@@ -11,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements first for better Docker layer caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --system -r requirements.txt
 
 # Copy application code and default assets
 COPY pb_worker.py pb_client.py ./

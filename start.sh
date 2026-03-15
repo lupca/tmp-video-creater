@@ -5,9 +5,14 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 
 # Activate venv
+if ! command -v uv >/dev/null 2>&1; then
+    echo "uv is not installed. Install it first: https://docs.astral.sh/uv/getting-started/installation/"
+    exit 1
+fi
+
 if [ ! -d ".venv" ]; then
     echo "Creating virtual environment..."
-    python3 -m venv .venv
+    uv venv .venv
 fi
 source .venv/bin/activate
 PYTHON_BIN="$DIR/.venv/bin/python3"
@@ -16,7 +21,7 @@ if [ ! -x "$PYTHON_BIN" ]; then
 fi
 
 # Install httpx if missing
-"$PYTHON_BIN" -c "import httpx" 2>/dev/null || "$PYTHON_BIN" -m pip install httpx
+"$PYTHON_BIN" -c "import httpx" 2>/dev/null || uv pip install --python "$PYTHON_BIN" httpx
 
 # Required env vars
 : "${PB_URL:=http://127.0.0.1:8090}"

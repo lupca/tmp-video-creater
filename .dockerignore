@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Python
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+
+# Caches
+.cache_blur
+.cache_tts
+
+# Local data & media (not needed in image)
+data/
+images/
+bk/
+*.mp4
+*.avi
+*.mkv
+*.flv
+
+# Docs & tests
+docs/
+tests/
+*.md
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+
+# Demo scripts
+render_hook_outro_demo.py
